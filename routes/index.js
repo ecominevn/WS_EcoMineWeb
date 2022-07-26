@@ -1,5 +1,53 @@
 var express = require('express');
 var router = express.Router();
+var multer = require('multer');
+var path = require("path");
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads')
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + Math.random() + '-' + file.originalname)
+  }
+})
+var upload = multer({
+  storage: storage,
+  dest: 'uploads/',
+  limits: {fileSize: 2 * 1024 * 1024},
+  fileFilter: function (req, file, cb) {
+    var ten = file.mimetype;
+    console.log(ten);
+    if(ten.indexOf('jpeg') > -1){
+      cb(null, true);
+    }else{
+      cb(new Error("Sai đuôi file, yêu cầu JPG ối rồi ôi"), false);
+    }
+  }
+}).array('file', 6);
+
+router.post('/upload', function (req, res) {
+  upload(req, res, function (err){
+    if(err != null){
+      res.send(err.message);
+    }else{
+      var title = req.body.title;
+      var description = req.body.description;
+
+      var files = req.files;
+
+      var result = new Object();
+      result.title = title;
+      result.description = description;
+      result.links = [];
+
+      for(let i = 0 ;i < files.length; i++){
+        result.links.push(files[i].path);
+      }
+
+      res.send(JSON.stringify(result));
+    }
+  })
+})
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
